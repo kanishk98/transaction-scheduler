@@ -1,14 +1,24 @@
+class Schedule:
+	"""
+	operations represents list of ops to be executed as part of self
+	locktable represents table of requested data items and transactions in system memory
+	tids represents tids of all transactions in system memory
+	"""
+	def __init__(self, operations, locktable, tids):
+		super(Schedule, self).__init__()
+		self.locktable = locktable
+		self.operations = operations
+		self.tids = tids
+
 class Item:
 	"""
 	variable is the actual data item being represented
 	transactions is the set of items waiting on self
 	"""
-	def __init__(self, variable, transactions):
+	def __init__(self, variable):
 		super(Item, self).__init__()
 		self.variable = variable
-		self.transactions = transactions
 		
-
 class Operation:
 	"""
 	kind represents kind of data operation (read/write)
