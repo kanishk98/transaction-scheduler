@@ -46,4 +46,33 @@ def create_dependency_graph(schedule):
 				dset.append(key)
 				graph[tid] = dset
 
+	# graph between transactions and item sets created
 	print(jsonpickle.encode(graph))
+
+	dep_dict = find_dep_dict(graph, schedule.locktable)
+	print(jsonpickle.encode(dep_dict))
+
+	tid = ldsf(dep_dict)
+	print(tid)
+
+def find_dep_dict(graph, locktable):
+	# returns set containing number of transactions dependent on corresponding transaction
+	dep_dict = {}
+	for transaction in graph:
+		items = graph[transaction]
+		dep_dict[transaction] = 0
+		for item in items:
+			# finding dset size using locktable
+			dep_dict[transaction] = dep_dict[transaction] + len(locktable[item]) - 1
+	return dep_dict
+
+def ldsf(dep_dict):
+	# todo: add timestamp ordering for transactions with equal dependency set size
+	m = -1
+	tid = -1
+	for transaction in dep_dict:
+		if dep_dict[transaction] > m:
+			tid = transaction
+			m = dep_dict[transaction]
+
+	return tid
