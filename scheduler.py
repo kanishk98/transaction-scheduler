@@ -6,6 +6,7 @@ schedules the transactions to maintain consistency
 from datamodel import Transaction, Operation, Schedule
 import jsonpickle
 import math
+import itertools
 
 def organise_operations(operation, schedule):
 	# operation represents new db operation
@@ -26,10 +27,10 @@ def organise_operations(operation, schedule):
 		schedule.operations.append(operation)
 		schedule.locktable = locktable
 		print(jsonpickle.encode(schedule.locktable))
-		create_dependency_graph(locktable)
+		create_dependency_graph(operation.item, locktable)
 		return schedule
 
-def create_dependency_graph(locktable):
+def create_dependency_graph(item, locktable):
 	# iterate over locktable to check dependencies
 	graph = {}
 	for key in locktable:
@@ -49,7 +50,9 @@ def create_dependency_graph(locktable):
 
 	# graph between transactions and item sets created
 	print('Graph: ' + str(jsonpickle.encode(graph)))
+	core_algorithm(graph, locktable, item)
 
+def core_algorithm(graph, locktable, item):
 	dep_dict = find_dep_dict(graph, locktable)
 	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
 
@@ -61,18 +64,27 @@ def create_dependency_graph(locktable):
 
 	# m is the size of ldset
 	# tid is the transaction id associated with an m-sized dset
-	m, tid = ldsf(e_dep_dict)
-	print(m)
+	e, tid = ldsf(e_dep_dict)
+	print(e)
 	print(tid)
 
+	# finding shared lock requests for same item
+	if (not item.kind):
+		s_graph = shared_lock_requests(item, graph)
+		print('S_Graph: ' + str(jsonpickle.encode(s_graph)))
+		s_dep_dict = find_dep_dict(s_graph, locktable)
+	
 	# creating batch
 	# todo: find more efficient method to maximise function
-	batch = bldsf(s_dep_dict)
-
+	s, batch = bldsf(s_dep_dict)
+	print(s)
+	print(batch)
 
 
 def find_dep_dict(graph, locktable):
-	# returns set containing number of transactions dependent on corresponding transaction
+	"""
+	returns set containing number of transactions dependent on corresponding transaction
+	"""
 	dep_dict = {}
 	for transaction in graph:
 		items = graph[transaction]
@@ -105,9 +117,27 @@ def ldsf(dep_dict):
 
 def bldsf(dep_dict):
 	batch = []
-	m = []
+	m = 0
+	if len(dep_dict) <= 1:
+		for transaction in dep_dict:
+			print(jsonpickle.encode(dep_dict))
+			m = dep_dict[transaction]
+			batch.append(transaction)
+		return m, batch
+	
+	k = len(dep_dict)
+	for i in range(1, k):
+		temp_batch = dict(itertools.combinations(dep_dict, i))
+		print(jsonpickle.encode(temp_batch))
+		total = 0
+		for transaction in temp_batch:
+			total = total + temp_batch[transaction]
+		if total/math.sqrt(k) > m:
+			m = total/math.sqrt(k)
+			batch = temp_batch
+		
+	return m, batch
 
-	return batch
 
 def refined_deps(dep_dict, kind):
 	copy = dict(dep_dict)
@@ -115,4 +145,13 @@ def refined_deps(dep_dict, kind):
 		if transaction.kind != kind:
 			del copy[transaction]
 
+	return copy
+
+def shared_lock_requests(item, graph):
+	copy = dict(graph)
+	if not item.kind:
+		return graph
+	for transaction in graph:
+		if not (item in graph[transaction]):
+			del copy[transaction]
 	return copy
