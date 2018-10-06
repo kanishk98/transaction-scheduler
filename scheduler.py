@@ -69,7 +69,8 @@ def core_algorithm(graph, locktable, item):
 	# print(tid)
 
 	# finding shared lock requests for same item
-	if (not item.kind):
+	# print(item.kind)
+	if item.kind is False:
 		s_graph = shared_lock_requests(item, graph)
 		# print('S_Graph: ' + str(jsonpickle.encode(s_graph)))
 		s_dep_dict = find_dep_dict(s_graph, locktable)
@@ -90,7 +91,10 @@ def schedule_operation(e, tid, s, batch):
 		# exclusive transaction won
 		print(str(tid) + ' gets scheduled')
 	else:
-		print(str(batch) + ' all get scheduled')
+		b = []
+		for t in batch:
+			b.append(t.tid)
+		print(str(b) + ' all get scheduled')
 
 
 def find_dep_dict(graph, locktable):
