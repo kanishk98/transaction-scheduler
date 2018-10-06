@@ -9,15 +9,6 @@ class Schedule:
 		self.locktable = locktable
 		self.operations = operations
 		self.tids = tids
-
-class Item:
-	"""
-	variable is the actual data item being represented
-	transactions is the set of items waiting on self
-	"""
-	def __init__(self, variable):
-		super(Item, self).__init__()
-		self.variable = variable
 		
 class Operation:
 	"""

@@ -3,35 +3,47 @@ accepts Operation objects and aggregates them into transactions
 schedules the transactions to maintain consistency
 """
 
-from datamodel import Transaction, Operation, Item, Schedule
+from datamodel import Transaction, Operation, Schedule
 import jsonpickle
 
 def organise_operations(operation, schedule):
 	# operation represents new db operation
 	# needs to be added to schedule
-
+	schedule.tids.append(operation.tid)
 	locktable = schedule.locktable
 	dependent_on = None
 	try:
 		dependent_on = locktable[operation.item]
+		dependent_on.append(operation.tid)
 	except Exception as e:
 		dependent_on = [] 
 		# item operation uses is not used by anything else
-		locktable[operation.item] = operation.tid
+		dependent_on.append(operation.tid)	
+		print(dependent_on)
 	finally:
-		print(jsonpickle.encode(locktable[operation.item]))
+		locktable[operation.item] = dependent_on
+		schedule.locktable = locktable
+		schedule.operations.append(operation)
+		print(jsonpickle.encode(schedule.locktable))
+		create_dependency_graph(schedule)	
+		return schedule
 
-		
+def create_dependency_graph(schedule):
+	# iterate over locktable to check dependencies
+	# todo: shouldn't we save graph in a file to make processing faster?
+	graph = {}
+	for key in schedule.locktable:
+		print(key)
+		tids = schedule.locktable[key]
+		for tid in tids:
+			dset = []
+			try:
+				dset = graph[tid]
+			except Exception as e:
+				graph[tid] = []
+			finally:
+				# adds object to dset of every transaction
+				dset.append(key)
+				graph[tid] = dset
 
-# def create_dependency_graph(schedule):
-	# only transactions with an empty dset need to be checked for finding new links
-	# if we know that a transaction in schedule depends on an item and b transaction also depends on same item
-	# then b depends on a (a is in dset of b)
-
-	
-o1 = Operation('r', Item(variable='x'), 'A') # r1(x)
-operations = []
-operations.append(o1)
-tids = []
-tids.append('A')
-organise_operations(o1, Schedule([], {}, tids))
+	print(jsonpickle.encode(graph))
