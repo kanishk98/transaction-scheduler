@@ -21,12 +21,12 @@ def organise_operations(operation, schedule):
 		dependent_on = [] 
 		# item operation uses is not used by anything else
 		dependent_on.append(operation.tid)	
-		print(dependent_on)
+		# print(dependent_on)
 	finally:
 		locktable[operation.item] = dependent_on
 		schedule.operations.append(operation)
 		schedule.locktable = locktable
-		print(jsonpickle.encode(schedule.locktable))
+		# print(jsonpickle.encode(schedule.locktable))
 		create_dependency_graph(operation.item, locktable)
 		return schedule
 
@@ -34,7 +34,7 @@ def create_dependency_graph(item, locktable):
 	# iterate over locktable to check dependencies
 	graph = {}
 	for key in locktable:
-		print(key)
+		# print(key)
 		tids = locktable[key]
 		for tid in tids:
 			dset = []
@@ -49,36 +49,48 @@ def create_dependency_graph(item, locktable):
 				graph[t] = dset
 
 	# graph between transactions and item sets created
-	print('Graph: ' + str(jsonpickle.encode(graph)))
+	# print('Graph: ' + str(jsonpickle.encode(graph)))
 	core_algorithm(graph, locktable, item)
 
 def core_algorithm(graph, locktable, item):
 	dep_dict = find_dep_dict(graph, locktable)
-	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
+	# print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
 
 	e_dep_dict = refined_deps(dep_dict, True)
-	print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
+	# print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
 
 	s_dep_dict = refined_deps(dep_dict, False)
-	print('Shared dependency transactions: ' + str(jsonpickle.encode(s_dep_dict)))
+	# print('Shared dependency transactions: ' + str(jsonpickle.encode(s_dep_dict)))
 
 	# m is the size of ldset
 	# tid is the transaction id associated with an m-sized dset
 	e, tid = ldsf(e_dep_dict)
-	print(e)
-	print(tid)
+	# print(e)
+	# print(tid)
 
 	# finding shared lock requests for same item
 	if (not item.kind):
 		s_graph = shared_lock_requests(item, graph)
-		print('S_Graph: ' + str(jsonpickle.encode(s_graph)))
+		# print('S_Graph: ' + str(jsonpickle.encode(s_graph)))
 		s_dep_dict = find_dep_dict(s_graph, locktable)
 	
 	# creating batch
 	# todo: find more efficient method to maximise function
 	s, batch = bldsf(s_dep_dict)
-	print(s)
-	print(batch)
+	# print(s)
+	# print(batch)
+
+	schedule_operation(e, tid, s, batch)
+
+def schedule_operation(e, tid, s, batch):
+	"""
+	compares e and s and schedules operations accordingly
+	"""
+	if e > s:
+		# exclusive transaction won
+		print(str(tid) + ' gets scheduled')
+	else:
+		print(str(batch) + ' all get scheduled')
 
 
 def find_dep_dict(graph, locktable):
@@ -120,7 +132,7 @@ def bldsf(dep_dict):
 	m = 0
 	if len(dep_dict) <= 1:
 		for transaction in dep_dict:
-			print(jsonpickle.encode(dep_dict))
+			# print(jsonpickle.encode(dep_dict))
 			m = dep_dict[transaction]
 			batch.append(transaction)
 		return m, batch
@@ -128,7 +140,7 @@ def bldsf(dep_dict):
 	k = len(dep_dict)
 	for i in range(1, k):
 		temp_batch = dict(itertools.combinations(dep_dict, i))
-		print(jsonpickle.encode(temp_batch))
+		# print(jsonpickle.encode(temp_batch))
 		total = 0
 		for transaction in temp_batch:
 			total = total + temp_batch[transaction]
