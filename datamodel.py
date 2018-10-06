@@ -29,12 +29,7 @@ class Operation:
 		self.tid = tid
 
 class Transaction:
-	"""
-	operations represents the set of transaction operations
-	dset represents the set of transactions and items self is waiting on
-	"""
-	def __init__(self, operations, dset, tid):
+	def __init__(self, tid, kind):
 		super(Transaction, self).__init__()
-		self.operations = operations
-		self.dset = dset
 		self.tid = tid
+		self.kind = kind

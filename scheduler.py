@@ -37,14 +37,15 @@ def create_dependency_graph(locktable):
 		tids = locktable[key]
 		for tid in tids:
 			dset = []
+			t = Transaction(tid, key.kind)
 			try:
-				dset = graph[tid]
+				dset = graph[t]
 			except Exception as e:
-				graph[tid] = []
+				graph[t] = []
 			finally:
 				# adds object to dset of every transaction
 				dset.append(key)
-				graph[tid] = dset
+				graph[t] = dset
 
 	# graph between transactions and item sets created
 	print('Graph: ' + str(jsonpickle.encode(graph)))
@@ -52,13 +53,22 @@ def create_dependency_graph(locktable):
 	dep_dict = find_dep_dict(graph, locktable)
 	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
 
-	tid = ldsf(dep_dict)
-	print('Exclusive lock transaction: ' + str(tid))
+	e_dep_dict = refined_deps(dep_dict, True)
+	print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
+
+	s_dep_dict = refined_deps(dep_dict, False)
+	print('Shared dependency transactions: ' + str(jsonpickle.encode(s_dep_dict)))
+
+	# m is the size of ldset
+	# tid is the transaction id associated with an m-sized dset
+	m, tid = ldsf(e_dep_dict)
+	print(m)
+	print(tid)
 
 	# creating batch
 	# todo: find more efficient method to maximise function
-	batch = bldsf(dep_dict)
-	print('Shared lock transactions: ' + str(batch))
+	batch = bldsf(s_dep_dict)
+
 
 
 def find_dep_dict(graph, locktable):
@@ -80,6 +90,7 @@ def find_dep_dict(graph, locktable):
 		dep_dict[transaction] = dep_dict[transaction] - 1 
 	return dep_dict
 
+
 def ldsf(dep_dict):
 	# fifo ordering followed for transactions with same dset size
 	# todo: once conflicting ops are supported, replace fifo with proper to
@@ -87,16 +98,21 @@ def ldsf(dep_dict):
 	tid = -1
 	for transaction in dep_dict:
 		if dep_dict[transaction] > m and dep_dict:
-			tid = transaction
+			tid = transaction.tid
 			m = dep_dict[transaction]
 
-	return tid
+	return m, tid
 
 def bldsf(dep_dict):
 	batch = []
-	
+	m = []
+
 	return batch
 
+def refined_deps(dep_dict, kind):
+	copy = dict(dep_dict)
+	for transaction in dep_dict:
+		if transaction.kind != kind:
+			del copy[transaction]
 
-e_dep_dict = {}
-s_dep_dict = {}
+	return copy
