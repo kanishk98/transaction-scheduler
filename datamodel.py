@@ -1,3 +1,9 @@
+class Item:
+	def __init__(self, kind, variable):
+		super(Item, self).__init__()
+		self.variable = variable
+		self.kind = kind
+
 class Schedule:
 	"""
 	operations represents list of ops to be executed as part of self
@@ -12,7 +18,7 @@ class Schedule:
 		
 class Operation:
 	"""
-	kind represents kind of data operation (read/write)
+	kind represents kind of data operation (read/write represented by False/True)
 	item represents data item being altered by Transaction
 	tid represents transaction self belongs to
 	"""

@@ -5,6 +5,7 @@ schedules the transactions to maintain consistency
 
 from datamodel import Transaction, Operation, Schedule
 import jsonpickle
+import math
 
 def organise_operations(operation, schedule):
 	# operation represents new db operation
@@ -22,19 +23,18 @@ def organise_operations(operation, schedule):
 		print(dependent_on)
 	finally:
 		locktable[operation.item] = dependent_on
-		schedule.locktable = locktable
 		schedule.operations.append(operation)
+		schedule.locktable = locktable
 		print(jsonpickle.encode(schedule.locktable))
-		create_dependency_graph(schedule)	
+		create_dependency_graph(locktable)
 		return schedule
 
-def create_dependency_graph(schedule):
+def create_dependency_graph(locktable):
 	# iterate over locktable to check dependencies
-	# todo: shouldn't we save graph in a file to make processing faster?
 	graph = {}
-	for key in schedule.locktable:
+	for key in locktable:
 		print(key)
-		tids = schedule.locktable[key]
+		tids = locktable[key]
 		for tid in tids:
 			dset = []
 			try:
@@ -47,32 +47,56 @@ def create_dependency_graph(schedule):
 				graph[tid] = dset
 
 	# graph between transactions and item sets created
-	print(jsonpickle.encode(graph))
+	print('Graph: ' + str(jsonpickle.encode(graph)))
 
-	dep_dict = find_dep_dict(graph, schedule.locktable)
-	print(jsonpickle.encode(dep_dict))
+	dep_dict = find_dep_dict(graph, locktable)
+	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
 
 	tid = ldsf(dep_dict)
-	print(tid)
+	print('Exclusive lock transaction: ' + str(tid))
+
+	# creating batch
+	# todo: find more efficient method to maximise function
+	batch = bldsf(dep_dict)
+	print('Shared lock transactions: ' + str(batch))
+
 
 def find_dep_dict(graph, locktable):
 	# returns set containing number of transactions dependent on corresponding transaction
 	dep_dict = {}
 	for transaction in graph:
 		items = graph[transaction]
-		dep_dict[transaction] = 0
+		variables = []
 		for item in items:
-			# finding dset size using locktable
-			dep_dict[transaction] = dep_dict[transaction] + len(locktable[item]) - 1
+			variables.append(item.variable)
+		dep_dict[transaction] = 0
+		for t in graph:
+			i = graph[t]
+			for item in i:
+				if item.variable in variables:
+					# t has a dependency between itself and transaction
+					dep_dict[transaction] = dep_dict[transaction] + 1
+					break
+		dep_dict[transaction] = dep_dict[transaction] - 1 
 	return dep_dict
 
 def ldsf(dep_dict):
-	# todo: add timestamp ordering for transactions with equal dependency set size
+	# fifo ordering followed for transactions with same dset size
+	# todo: once conflicting ops are supported, replace fifo with proper to
 	m = -1
 	tid = -1
 	for transaction in dep_dict:
-		if dep_dict[transaction] > m:
+		if dep_dict[transaction] > m and dep_dict:
 			tid = transaction
 			m = dep_dict[transaction]
 
 	return tid
+
+def bldsf(dep_dict):
+	batch = []
+	
+	return batch
+
+
+e_dep_dict = {}
+s_dep_dict = {}
