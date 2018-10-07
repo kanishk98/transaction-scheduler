@@ -80,8 +80,8 @@ def schedule_operation(e, tid, s, batch):
 	"""
 	compares e and s and schedules operations accordingly
 	"""
-	print(e)
-	print(s)
+	print('Exclusive dset size :' + str(e))
+	print('Shared dset size: ' + str(s))
 	if e > s:
 		# exclusive transaction won
 		print(str(tid) + ' gets scheduled')
@@ -148,15 +148,15 @@ def bldsf(dep_dict):
 		t_arr.append(t)
 	for t in t_arr:
 		n_arr.append(dep_dict[t])
-	print('K IS HERE: ' + str(k))
+	# print('K IS HERE: ' + str(k))
 	for i in range(1, k):
 		temp_batch = list(itertools.combinations(t_arr, i))
-		print(jsonpickle.encode(temp_batch))
+		# print(jsonpickle.encode(temp_batch))
 		total = 0
 		for transaction in temp_batch:
-			print('TRANSACTION: ' + str(jsonpickle.encode(transaction)))
+			# print('TRANSACTION: ' + str(jsonpickle.encode(transaction)))
 			print(dep_dict[transaction[0]])
-			print('TRANSACTION[0]: ' + str(jsonpickle.encode(transaction[0])))
+			# print('TRANSACTION[0]: ' + str(jsonpickle.encode(transaction[0])))
 			total = total + dep_dict[transaction[0]]
 		if total/math.sqrt(k) > m:
 			m = total/math.sqrt(k)
