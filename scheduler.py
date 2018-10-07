@@ -54,7 +54,7 @@ def create_dependency_graph(item, locktable):
 
 def core_algorithm(graph, locktable, item):
 	dep_dict = find_dep_dict(graph, locktable)
-	# print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
+	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
 
 	e_dep_dict = refined_deps(dep_dict, True)
 	print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
@@ -107,13 +107,15 @@ def find_dep_dict(graph, locktable):
 		for t in graph:
 			i = graph[t]
 			for item in i:
+				if t == transaction:
+					# comparing same 2 transactions
+					break
 				if item.variable in variables:
 					# t has a dependency between itself and transaction
 					dep_dict[transaction] = dep_dict[transaction] + 1
 					if not (item.kind or items[i.index(item)].kind):
 						dep_dict[transaction] = dep_dict[transaction] - 1
 					break
-		dep_dict[transaction] = dep_dict[transaction] - 1
 	return dep_dict
 
 
@@ -131,7 +133,7 @@ def ldsf(dep_dict):
 
 def bldsf(dep_dict):
 	batch = []
-	m = 0
+	m = 0.0
 	if len(dep_dict) <= 1:
 		for transaction in dep_dict:
 			# print(jsonpickle.encode(dep_dict))
@@ -140,12 +142,22 @@ def bldsf(dep_dict):
 		return m, batch
 	
 	k = len(dep_dict)
+	t_arr = []
+	n_arr = []
+	for t in dep_dict:
+		t_arr.append(t)
+	for t in t_arr:
+		n_arr.append(dep_dict[t])
+	print('K IS HERE: ' + str(k))
 	for i in range(1, k):
-		temp_batch = dict(itertools.combinations(dep_dict, i))
+		temp_batch = list(itertools.combinations(t_arr, i))
 		print(jsonpickle.encode(temp_batch))
 		total = 0
 		for transaction in temp_batch:
-			total = total + temp_batch[transaction]
+			print('TRANSACTION: ' + str(jsonpickle.encode(transaction)))
+			print(dep_dict[transaction[0]])
+			print('TRANSACTION[0]: ' + str(jsonpickle.encode(transaction[0])))
+			total = total + dep_dict[transaction[0]]
 		if total/math.sqrt(k) > m:
 			m = total/math.sqrt(k)
 			batch = temp_batch
