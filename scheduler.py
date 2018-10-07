@@ -83,20 +83,18 @@ def schedule_operation(e, t, s, batch, dep_dict):
 	compares e and s and schedules operations accordingly
 	"""
 	# todo: confirm that condition being used is correct
-
-	logfile = open('logfile.txt', 'a')
-
+	"""
 	if e == -1:
 		e = 0
 	if s == -1:
 		s = 0
+	"""
 
 	print('Exclusive dset size :' + str(e))
 	print('Shared dset size: ' + str(s))
-	if e > s:
+	if e >= s:
 		# exclusive transaction won
 		print(str(t.tid) + ' gets scheduled')
-		logfile.write(str(t.tid) + '\n')
 		del dep_dict[t]
 	else:
 		b = []
@@ -109,7 +107,6 @@ def schedule_operation(e, t, s, batch, dep_dict):
 				b.append(transaction.tid)
 				del dep_dict[transaction]		
 		print(str(b) + ' all get scheduled')
-		logfile.write(str(b) + '\n')
 	return dep_dict
 
 
