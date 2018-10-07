@@ -83,22 +83,25 @@ def schedule_operation(e, t, s, batch, dep_dict):
 	compares e and s and schedules operations accordingly
 	"""
 	# todo: confirm that condition being used is correct
+
+	logfile = open('logfile.txt', 'a')
+
 	if e == -1:
 		e = 0
 	if s == -1:
 		s = 0
+
 	print('Exclusive dset size :' + str(e))
 	print('Shared dset size: ' + str(s))
 	if e > s:
 		# exclusive transaction won
 		print(str(t.tid) + ' gets scheduled')
+		logfile.write(str(t.tid) + '\n')
 		del dep_dict[t]
 	else:
 		b = []
 		# batch of transactions won
-		print('BATCH HERE: ' + str(jsonpickle.encode(batch)))
 		for transaction in batch:
-			print('TRANSACTION HERE: ' + str(jsonpickle.encode(transaction)))
 			if type(transaction) == tuple:
 				b.append(transaction[0].tid)
 				del dep_dict[transaction[0]]
@@ -106,6 +109,7 @@ def schedule_operation(e, t, s, batch, dep_dict):
 				b.append(transaction.tid)
 				del dep_dict[transaction]		
 		print(str(b) + ' all get scheduled')
+		logfile.write(str(b) + '\n')
 	return dep_dict
 
 
@@ -172,7 +176,7 @@ def bldsf(dep_dict):
 		total = 0
 		for transaction in temp_batch:
 			# print('TRANSACTION: ' + str(jsonpickle.encode(transaction)))
-			print(dep_dict[transaction[0]])
+			# print(dep_dict[transaction[0]])
 			# print('TRANSACTION[0]: ' + str(jsonpickle.encode(transaction[0])))
 			total = total + dep_dict[transaction[0]]
 		if total/math.sqrt(k) > m:
