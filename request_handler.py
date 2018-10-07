@@ -5,10 +5,6 @@ import jsonpickle
 
 
 
-def send_to_scheduler(operation):
-	operations = []
-	tids = []
-	schedule = Schedule(operations, {}, tids)
+def send_to_scheduler(operation, schedule):
 	schedule = organise_operations(operation, schedule)
-	time.sleep(5)
-
+	return schedule

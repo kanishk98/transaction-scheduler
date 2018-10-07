@@ -57,10 +57,10 @@ def core_algorithm(graph, locktable, item):
 	# print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
 
 	e_dep_dict = refined_deps(dep_dict, True)
-	# print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
+	print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
 
 	s_dep_dict = refined_deps(dep_dict, False)
-	# print('Shared dependency transactions: ' + str(jsonpickle.encode(s_dep_dict)))
+	print('Shared dependency transactions: ' + str(jsonpickle.encode(s_dep_dict)))
 
 	# m is the size of ldset
 	# tid is the transaction id associated with an m-sized dset
@@ -68,13 +68,6 @@ def core_algorithm(graph, locktable, item):
 	# print(e)
 	# print(tid)
 
-	# finding shared lock requests for same item
-	# print(item.kind)
-	if item.kind is False:
-		s_graph = shared_lock_requests(item, graph)
-		# print('S_Graph: ' + str(jsonpickle.encode(s_graph)))
-		s_dep_dict = find_dep_dict(s_graph, locktable)
-	
 	# creating batch
 	# todo: find more efficient method to maximise function
 	s, batch = bldsf(s_dep_dict)
@@ -87,6 +80,8 @@ def schedule_operation(e, tid, s, batch):
 	"""
 	compares e and s and schedules operations accordingly
 	"""
+	print(e)
+	print(s)
 	if e > s:
 		# exclusive transaction won
 		print(str(tid) + ' gets scheduled')
@@ -100,6 +95,7 @@ def schedule_operation(e, tid, s, batch):
 def find_dep_dict(graph, locktable):
 	"""
 	returns set containing number of transactions dependent on corresponding transaction
+	read operations do not depend on other read operations
 	"""
 	dep_dict = {}
 	for transaction in graph:
@@ -114,8 +110,10 @@ def find_dep_dict(graph, locktable):
 				if item.variable in variables:
 					# t has a dependency between itself and transaction
 					dep_dict[transaction] = dep_dict[transaction] + 1
+					if not (item.kind or items[i.index(item)].kind):
+						dep_dict[transaction] = dep_dict[transaction] - 1
 					break
-		dep_dict[transaction] = dep_dict[transaction] - 1 
+		dep_dict[transaction] = dep_dict[transaction] - 1
 	return dep_dict
 
 
@@ -125,7 +123,7 @@ def ldsf(dep_dict):
 	m = -1
 	tid = -1
 	for transaction in dep_dict:
-		if dep_dict[transaction] > m and dep_dict:
+		if dep_dict[transaction] > m:
 			tid = transaction.tid
 			m = dep_dict[transaction]
 
@@ -144,7 +142,7 @@ def bldsf(dep_dict):
 	k = len(dep_dict)
 	for i in range(1, k):
 		temp_batch = dict(itertools.combinations(dep_dict, i))
-		# print(jsonpickle.encode(temp_batch))
+		print(jsonpickle.encode(temp_batch))
 		total = 0
 		for transaction in temp_batch:
 			total = total + temp_batch[transaction]
@@ -168,6 +166,7 @@ def shared_lock_requests(item, graph):
 	if not item.kind:
 		return graph
 	for transaction in graph:
+		print('Inside for loop')
 		if not (item in graph[transaction]):
 			del copy[transaction]
 	return copy
