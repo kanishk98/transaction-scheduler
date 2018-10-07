@@ -19,7 +19,7 @@ def add_operation():
 		k = i['kind']
 		item = Item(k, var)
 		operation = Operation(item.kind, item, data['tid'])
-		schedule = send_to_scheduler(operation, schedule)
+		schedule = send_to_scheduler(operation, schedule, len(arr))
 	return str(jsonpickle.encode(arr))
 
 operations = []

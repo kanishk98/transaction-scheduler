@@ -5,6 +5,6 @@ import jsonpickle
 
 
 
-def send_to_scheduler(operation, schedule):
-	schedule = organise_operations(operation, schedule)
+def send_to_scheduler(operation, schedule, length):
+	schedule = organise_operations(operation, schedule, length)
 	return schedule
