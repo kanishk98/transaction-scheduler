@@ -83,14 +83,21 @@ def schedule_operation(e, t, s, batch, dep_dict):
 	compares e and s and schedules operations accordingly
 	"""
 	# todo: confirm that condition being used is correct
-	"""
-	if e == -1:
-		e = 0
-	if s == -1:
-		s = 0
-	"""
 
-	print('Exclusive dset size :' + str(e))
+	# cleaning batch object
+	new_batch = []
+	for b in batch:
+		if type(b) == tuple:
+			# b contains transactions
+			for temp_transaction in b:
+				if type(temp_transaction) == Transaction:
+					new_batch.append(temp_transaction)
+				else:
+					print('Ouch :' + str(jsonpickle.encode(temp_transaction)))
+
+	new_batch = set(new_batch)
+	batch = new_batch
+	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
 	if e >= s:
 		# exclusive transaction won
@@ -99,6 +106,7 @@ def schedule_operation(e, t, s, batch, dep_dict):
 	else:
 		b = []
 		# batch of transactions won
+		print('BATCH:' + jsonpickle.encode(batch))
 		for transaction in batch:
 			if type(transaction) == tuple:
 				b.append(transaction[0].tid)
