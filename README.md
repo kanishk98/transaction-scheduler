@@ -1,6 +1,6 @@
-# Transaction scheduler to guarantee concurrency control
+# Transaction scheduler to guarantee consistency
 
-Demonstration of a scheduling algorithm for a multi-user database system. 
+Demonstration of a concurrency-mindful scheduling algorithm for a multi-user database system. 
 
 ## Components
 
