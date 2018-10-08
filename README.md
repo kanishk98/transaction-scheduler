@@ -8,7 +8,9 @@ Demonstration of a concurrency-mindful scheduling algorithm for a multi-user dat
 - [x] bLDSF algorithm implementation for conflict-aware lock scheduling
 - [x] Operation scheduling output printed appropriately and legibly
 - [ ] ~~Adding delayer to ensure serialisability of operations within transactions~~
-- [ ] Demonstration of consistent results 
+- [x] Demonstration of consistent results
+- [x] Ensuring no deadlocks
+- [ ] Preventing starvation after removal of Assumption 1
 - [ ] Ensuring recoverability
 - [ ] Preventing cascading rollbacks
 
