@@ -54,8 +54,9 @@ def create_dependency_graph(item, locktable, length):
 		core_algorithm(graph, locktable, item)
 
 def core_algorithm(graph, locktable, item):
-	dep_dict = find_dep_dict(graph, locktable)
+	dep_dict, t_dep_graph = find_dep_dict(graph, locktable)
 	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
+	print('T-dependency graph: ' + str(jsonpickle.encode(t_dep_graph)))
 
 	while len(dep_dict) > 0:
 		e_dep_dict = refined_deps(dep_dict, True)
@@ -76,7 +77,7 @@ def core_algorithm(graph, locktable, item):
 		# print(s)
 		# print(batch)
 
-		dep_dict = schedule_operation(e, t, s, batch, dep_dict)
+		dep_dict = schedule_operation(e, t, s, batch, dep_dict)	
 
 def schedule_operation(e, t, s, batch, dep_dict):
 	"""
@@ -123,6 +124,8 @@ def find_dep_dict(graph, locktable):
 	returns set containing number of transactions dependent on corresponding transaction
 	read operations do not depend on other read operations
 	"""
+	t_dep_graph = {}
+	
 	dep_dict = {}
 	for transaction in graph:
 		items = graph[transaction]
@@ -139,10 +142,16 @@ def find_dep_dict(graph, locktable):
 				if item.variable in variables:
 					# t has a dependency between itself and transaction
 					dep_dict[transaction] = dep_dict[transaction] + 1
+					try:
+						t_dep_graph[t.tid].append(transaction.tid)
+					except Exception as e:
+						t_dep_graph[t.tid] = []
+						t_dep_graph[t.tid].append(transaction.tid)
 					if not (item.kind or items[i.index(item)].kind):
 						dep_dict[transaction] = dep_dict[transaction] - 1
+						t_dep_graph[t.tid].remove(transaction.tid)
 					break
-	return dep_dict
+	return dep_dict, t_dep_graph
 
 
 def ldsf(dep_dict):
@@ -208,3 +217,17 @@ def shared_lock_requests(item, graph):
 		if not (item in graph[transaction]):
 			del copy[transaction]
 	return copy
+
+"""def find_t_dep_graph(graph, locktable):
+	print('locktable: ' + str(jsonpickle.encode(locktable)))
+	t_dep_graph = {}
+	for item in locktable:
+		tr_arr = locktable[item]
+		for transaction in tr_arr:
+			t_dep_graph[transaction] = []
+			# checking which other transactions want same item in conflicting mode
+			for i in locktable:
+				t = locktable[i]
+				if t != transaction and i.variable == item.variable and not(i.kind or item.kind):
+					# t and transaction have dependency
+					t_dep_graph[transaction].append(t)"""
