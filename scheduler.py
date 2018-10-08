@@ -77,9 +77,9 @@ def core_algorithm(graph, locktable, item):
 		# print(s)
 		# print(batch)
 
-		dep_dict = schedule_operation(e, t, s, batch, dep_dict)	
+		dep_dict = schedule_operation(e, t, s, batch, dep_dict, t_dep_graph)	
 
-def schedule_operation(e, t, s, batch, dep_dict):
+def schedule_operation(e, t, s, batch, dep_dict, t_dep_graph):
 	"""
 	compares e and s and schedules operations accordingly
 	"""
@@ -104,10 +104,14 @@ def schedule_operation(e, t, s, batch, dep_dict):
 		# exclusive transaction won
 		print(str(t.tid) + ' gets scheduled')
 		del dep_dict[t]
+		arr = []
+		arr.append(t.tid)
+		t_dep_graph, dep_dict = trim_dep_graph(t_dep_graph, arr, dep_dict)
 	else:
 		b = []
+		arr = []
 		# batch of transactions won
-		print('BATCH:' + jsonpickle.encode(batch))
+		print('Batch:' + jsonpickle.encode(batch))
 		for transaction in batch:
 			if type(transaction) == tuple:
 				b.append(transaction[0].tid)
@@ -116,7 +120,23 @@ def schedule_operation(e, t, s, batch, dep_dict):
 				b.append(transaction.tid)
 				del dep_dict[transaction]		
 		print(str(b) + ' all get scheduled')
+		for temp in b:
+			arr.append(temp)
+		t_dep_graph, dep_dict = trim_dep_graph(t_dep_graph, arr, dep_dict)
 	return dep_dict
+
+def trim_dep_graph(t_dep_graph, transactions, dep_dict):
+	# print(transactions)
+	for tid in transactions:
+		for value in t_dep_graph[tid]:
+			t_dep_graph[value].remove(tid)
+			# check dep_dict for transaction with tid matching value
+			for t in dep_dict:
+				if t.tid == value:
+					dep_dict[t] = dep_dict[t] - 1
+
+	return t_dep_graph, dep_dict
+		
 
 
 def find_dep_dict(graph, locktable):
