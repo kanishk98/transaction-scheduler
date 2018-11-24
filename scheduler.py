@@ -34,7 +34,7 @@ def create_dependency_graph(item, locktable, length):
 	# iterate over locktable to check dependencies
 	graph = {}
 	for key in locktable:
-		# print(key)
+		# key here represents an item used by some operations in schedule
 		tids = locktable[key]
 		for tid in tids:
 			dset = []

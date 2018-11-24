@@ -15,7 +15,7 @@ Demonstration of a scheduling algorithm for a multi-user database system.
 ## Assumptions
 
 1. Operations are executed in between server-side requests.
-2. The same server request does not include conflicting operations from the same transaction.
+2. The same server request does not include conflicting operations for different items from the same transaction.
 
 ## References
 
