@@ -1,3 +1,6 @@
+# PyCharm folder
+.idea
+
 # DBMS log file
 logfile.txt
 

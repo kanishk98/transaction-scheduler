@@ -54,8 +54,9 @@ def create_dependency_graph(item, locktable, length):
 		core_algorithm(graph, locktable, item)
 
 def core_algorithm(graph, locktable, item):
-	dep_dict = find_dep_dict(graph, locktable)
+	dep_dict, t_dep_graph = find_dep_dict(graph, locktable)
 	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
+	print('T-dependency graph: ' + str(jsonpickle.encode(t_dep_graph)))
 
 	while len(dep_dict) > 0:
 		e_dep_dict = refined_deps(dep_dict, True)
@@ -76,31 +77,41 @@ def core_algorithm(graph, locktable, item):
 		# print(s)
 		# print(batch)
 
-		dep_dict = schedule_operation(e, t, s, batch, dep_dict)
+		dep_dict = schedule_operation(e, t, s, batch, dep_dict, t_dep_graph)	
 
-def schedule_operation(e, t, s, batch, dep_dict):
+def schedule_operation(e, t, s, batch, dep_dict, t_dep_graph):
 	"""
 	compares e and s and schedules operations accordingly
 	"""
 	# todo: confirm that condition being used is correct
 
-	logfile = open('logfile.txt', 'a')
+	# cleaning batch object
+	new_batch = []
+	for b in batch:
+		if type(b) == tuple:
+			# b contains transactions
+			for temp_transaction in b:
+				if type(temp_transaction) == Transaction:
+					new_batch.append(temp_transaction)
+				else:
+					print('Ouch :' + str(jsonpickle.encode(temp_transaction)))
 
-	if e == -1:
-		e = 0
-	if s == -1:
-		s = 0
-
-	print('Exclusive dset size :' + str(e))
+	new_batch = set(new_batch)
+	batch = new_batch
+	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
-	if e > s:
+	if e >= s:
 		# exclusive transaction won
 		print(str(t.tid) + ' gets scheduled')
-		logfile.write(str(t.tid) + '\n')
 		del dep_dict[t]
+		arr = []
+		arr.append(t.tid)
+		t_dep_graph, dep_dict = trim_dep_graph(t_dep_graph, arr, dep_dict)
 	else:
 		b = []
+		arr = []
 		# batch of transactions won
+		print('Batch:' + jsonpickle.encode(batch))
 		for transaction in batch:
 			if type(transaction) == tuple:
 				b.append(transaction[0].tid)
@@ -109,8 +120,23 @@ def schedule_operation(e, t, s, batch, dep_dict):
 				b.append(transaction.tid)
 				del dep_dict[transaction]		
 		print(str(b) + ' all get scheduled')
-		logfile.write(str(b) + '\n')
+		for temp in b:
+			arr.append(temp)
+		t_dep_graph, dep_dict = trim_dep_graph(t_dep_graph, arr, dep_dict)
 	return dep_dict
+
+def trim_dep_graph(t_dep_graph, transactions, dep_dict):
+	# print(transactions)
+	for tid in transactions:
+		for value in t_dep_graph[tid]:
+			t_dep_graph[value].remove(tid)
+			# check dep_dict for transaction with tid matching value
+			for t in dep_dict:
+				if t.tid == value:
+					dep_dict[t] = dep_dict[t] - 1
+
+	return t_dep_graph, dep_dict
+		
 
 
 def find_dep_dict(graph, locktable):
@@ -118,6 +144,8 @@ def find_dep_dict(graph, locktable):
 	returns set containing number of transactions dependent on corresponding transaction
 	read operations do not depend on other read operations
 	"""
+	t_dep_graph = {}
+	
 	dep_dict = {}
 	for transaction in graph:
 		items = graph[transaction]
@@ -134,10 +162,16 @@ def find_dep_dict(graph, locktable):
 				if item.variable in variables:
 					# t has a dependency between itself and transaction
 					dep_dict[transaction] = dep_dict[transaction] + 1
+					try:
+						t_dep_graph[t.tid].append(transaction.tid)
+					except Exception as e:
+						t_dep_graph[t.tid] = []
+						t_dep_graph[t.tid].append(transaction.tid)
 					if not (item.kind or items[i.index(item)].kind):
 						dep_dict[transaction] = dep_dict[transaction] - 1
+						t_dep_graph[t.tid].remove(transaction.tid)
 					break
-	return dep_dict
+	return dep_dict, t_dep_graph
 
 
 def ldsf(dep_dict):
@@ -203,3 +237,17 @@ def shared_lock_requests(item, graph):
 		if not (item in graph[transaction]):
 			del copy[transaction]
 	return copy
+
+"""def find_t_dep_graph(graph, locktable):
+	print('locktable: ' + str(jsonpickle.encode(locktable)))
+	t_dep_graph = {}
+	for item in locktable:
+		tr_arr = locktable[item]
+		for transaction in tr_arr:
+			t_dep_graph[transaction] = []
+			# checking which other transactions want same item in conflicting mode
+			for i in locktable:
+				t = locktable[i]
+				if t != transaction and i.variable == item.variable and not(i.kind or item.kind):
+					# t and transaction have dependency
+					t_dep_graph[transaction].append(t)"""

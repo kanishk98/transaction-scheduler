@@ -1,6 +1,6 @@
-# Transaction scheduler to guarantee concurrency control
+# Transaction scheduler to guarantee consistency
 
-Demonstration of a scheduling algorithm for a multi-user database system. 
+Demonstration of a concurrency-mindful scheduling algorithm for a multi-user database system. 
 
 ## Components
 
@@ -8,7 +8,9 @@ Demonstration of a scheduling algorithm for a multi-user database system.
 - [x] bLDSF algorithm implementation for conflict-aware lock scheduling
 - [x] Operation scheduling output printed appropriately and legibly
 - [ ] ~~Adding delayer to ensure serialisability of operations within transactions~~
-- [ ] Demonstration of consistent results 
+- [x] Demonstration of consistent results
+- [x] Ensuring no deadlocks
+- [ ] Preventing starvation after removal of Assumption 1
 - [ ] Ensuring recoverability
 - [ ] Preventing cascading rollbacks
 
