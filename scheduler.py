@@ -7,6 +7,7 @@ from datamodel import Transaction, Operation, Schedule
 import jsonpickle
 import math
 import itertools
+from time import sleep
 
 def organise_operations(operation, schedule, length):
 	# operation represents new db operation
@@ -56,8 +57,8 @@ def create_dependency_graph(item, locktable, length):
 def core_algorithm(graph, locktable, item):
 	dep_dict = find_dep_dict(graph, locktable)
 	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
-
-	while len(dep_dict) > 0:
+	c = 0
+	while len(dep_dict) > 0 and c < 5:
 		e_dep_dict = refined_deps(dep_dict, True)
 		print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
 
@@ -74,8 +75,9 @@ def core_algorithm(graph, locktable, item):
 		# todo: find more efficient method to maximise function
 		s, batch = bldsf(s_dep_dict)
 		# print(s)
-		# print(batch)
+		# print(bldsf)
 
+		c = c + 1
 		dep_dict = schedule_operation(e, t, s, batch, dep_dict)
 
 def schedule_operation(e, t, s, batch, dep_dict):
@@ -83,20 +85,20 @@ def schedule_operation(e, t, s, batch, dep_dict):
 	compares e and s and schedules operations accordingly
 	"""
 	# todo: confirm that condition being used is correct
-
-	logfile = open('logfile.txt', 'a')
+	
+	# logfile = open('logfile.txt', 'a')
 
 	if e == -1:
 		e = 0
 	if s == -1:
 		s = 0
 
-	print('Exclusive dset size :' + str(e))
+	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
 	if e > s:
 		# exclusive transaction won
 		print(str(t.tid) + ' gets scheduled')
-		logfile.write(str(t.tid) + '\n')
+		# logfile.write(str(t.tid) + '\n')
 		del dep_dict[t]
 		# prevent starvation of transactions with small dsets
 		dep_dict = age_transactions(dep_dict)
@@ -112,7 +114,7 @@ def schedule_operation(e, t, s, batch, dep_dict):
 				del dep_dict[transaction]
 			dep_dict = age_transactions(dep_dict)		
 		print(str(b) + ' all get scheduled')
-		logfile.write(str(b) + '\n')
+		# logfile.write(str(b) + '\n')
 	return dep_dict
 
 
@@ -133,7 +135,8 @@ def find_dep_dict(graph, locktable):
 		variables = []
 		for item in items:
 			variables.append(item.variable)
-		dep_dict[transaction] = 0
+		# every transaction is dependent on itself by default
+		dep_dict[transaction] = 1
 		for t in graph:
 			i = graph[t]
 			for item in i:
@@ -179,9 +182,10 @@ def bldsf(dep_dict):
 	for t in t_arr:
 		n_arr.append(dep_dict[t])
 	# print('K IS HERE: ' + str(k))
+	# todo: check if range(1, k) or (1, k + 1) should be used
 	for i in range(1, k):
 		temp_batch = list(itertools.combinations(t_arr, i))
-		# print(jsonpickle.encode(temp_batch))
+		print(jsonpickle.encode(temp_batch))
 		total = 0
 		for transaction in temp_batch:
 			# print('TRANSACTION: ' + str(jsonpickle.encode(transaction)))
