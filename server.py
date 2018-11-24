@@ -20,7 +20,7 @@ def add_operation():
 		item = Item(k, var)
 		operation = Operation(item.kind, item, data['tid'])
 		schedule = send_to_scheduler(operation, schedule, len(arr))
-	return str(jsonpickle.encode(arr))
+	return str(jsonpickle.encode(schedule))
 
 operations = []
 locktable = {}

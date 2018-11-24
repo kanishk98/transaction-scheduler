@@ -98,6 +98,8 @@ def schedule_operation(e, t, s, batch, dep_dict):
 		print(str(t.tid) + ' gets scheduled')
 		logfile.write(str(t.tid) + '\n')
 		del dep_dict[t]
+		# prevent starvation of transactions with small dsets
+		dep_dict = age_transactions(dep_dict)
 	else:
 		b = []
 		# batch of transactions won
@@ -107,9 +109,16 @@ def schedule_operation(e, t, s, batch, dep_dict):
 				del dep_dict[transaction[0]]
 			else:
 				b.append(transaction.tid)
-				del dep_dict[transaction]		
+				del dep_dict[transaction]
+			dep_dict = age_transactions(dep_dict)		
 		print(str(b) + ' all get scheduled')
 		logfile.write(str(b) + '\n')
+	return dep_dict
+
+
+def age_transactions(dep_dict):
+	for transaction in dep_dict:
+		dep_dict[transaction] = dep_dict[transaction] + 0.5
 	return dep_dict
 
 
