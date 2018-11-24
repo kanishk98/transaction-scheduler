@@ -33,7 +33,8 @@ def organise_operations(operation, schedule, length):
 
 def create_dependency_graph(item, locktable, length):
 	# iterate over locktable to check dependencies
-	graph = {}
+	graph = master_graph
+	print('Master graph: ' + str(jsonpickle.encode(master_graph)))
 	for key in locktable:
 		# key here represents an item used by some operations in schedule
 		tids = locktable[key]
@@ -50,9 +51,10 @@ def create_dependency_graph(item, locktable, length):
 				graph[t] = dset
 
 	# graph between transactions and item sets created
-	# print('Graph: ' + str(jsonpickle.encode(graph)))
-	if len(graph) == length:
-		core_algorithm(graph, locktable, item)
+	print('Graph: ' + str(jsonpickle.encode(graph)))
+	print(length)
+	# if len(graph) == length:
+	core_algorithm(graph, locktable, item)
 
 def core_algorithm(graph, locktable, item):
 	dep_dict = find_dep_dict(graph, locktable)
@@ -78,9 +80,9 @@ def core_algorithm(graph, locktable, item):
 		# print(bldsf)
 
 		c = c + 1
-		dep_dict = schedule_operation(e, t, s, batch, dep_dict)
+		dep_dict = schedule_operation(e, t, s, batch, dep_dict, graph)
 
-def schedule_operation(e, t, s, batch, dep_dict):
+def schedule_operation(e, t, s, batch, dep_dict, graph):
 	"""
 	compares e and s and schedules operations accordingly
 	"""
@@ -92,7 +94,6 @@ def schedule_operation(e, t, s, batch, dep_dict):
 		e = 0
 	if s == -1:
 		s = 0
-
 	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
 	if e > s:
@@ -102,20 +103,35 @@ def schedule_operation(e, t, s, batch, dep_dict):
 		del dep_dict[t]
 		# prevent starvation of transactions with small dsets
 		dep_dict = age_transactions(dep_dict)
+		exec_operation([t], graph)
 	else:
 		b = []
+		exec_batch = []
 		# batch of transactions won
 		for transaction in batch:
 			if type(transaction) == tuple:
 				b.append(transaction[0].tid)
+				exec_batch.append(transaction[0])
 				del dep_dict[transaction[0]]
 			else:
 				b.append(transaction.tid)
+				exec_batch.append(transaction)
 				del dep_dict[transaction]
 			dep_dict = age_transactions(dep_dict)		
 		print(str(b) + ' all get scheduled')
+		exec_operation(exec_batch, graph)
 		# logfile.write(str(b) + '\n')
 	return dep_dict
+
+def exec_operation(transactions, graph):
+	print(len(graph))
+	for transaction in transactions:
+		print('Removing transaction: ' + str(jsonpickle.encode(transaction)))
+		sleep(3)
+		del graph[transaction]
+		print('Graph: ' + str(jsonpickle.encode(graph)))
+	global master_graph
+	master_graph = graph
 
 
 def age_transactions(dep_dict):
@@ -135,7 +151,6 @@ def find_dep_dict(graph, locktable):
 		variables = []
 		for item in items:
 			variables.append(item.variable)
-		# every transaction is dependent on itself by default
 		dep_dict[transaction] = 1
 		for t in graph:
 			i = graph[t]
@@ -216,3 +231,6 @@ def shared_lock_requests(item, graph):
 		if not (item in graph[transaction]):
 			del copy[transaction]
 	return copy
+
+global master_graph
+master_graph = {}
