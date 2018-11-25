@@ -33,11 +33,9 @@ def organise_operations(operation, schedule, length):
 
 def create_dependency_graph(item, locktable, length, graph={}):
 	# iterate over locktable to check dependencies
-	print('Locktable: ' + str(locktable))
 	for key in locktable:
 		# key here represents an item used by some operations in schedule
 		tids = locktable[key]
-		print(tids)
 		for tid in tids:
 			dset = []
 			t = Transaction(tid, key.kind)
@@ -48,13 +46,11 @@ def create_dependency_graph(item, locktable, length, graph={}):
 			finally:
 				# adds object to dset of every transaction
 				dset.append(key)
-				print(dset)
 				graph[t] = dset
-				print('Graph: ' + str((graph)))
 	# graph between transactions and item sets created
 
-	print(length)
-	core_algorithm(graph, locktable, item)
+	if len(graph) >= length:
+		core_algorithm(graph, locktable, item)
 
 def core_algorithm(graph, locktable, item):
 	dep_dict = find_dep_dict(graph, locktable)
@@ -125,12 +121,8 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph):
 	return dep_dict
 
 def exec_operation(transactions, graph):
-	global lock
-	lock = True
 	for transaction in transactions:
-		print('Removing transaction: ' + str(jsonpickle.encode(transaction)))
 		del graph[transaction]
-	lock = False
 
 
 def age_transactions(dep_dict):
@@ -230,5 +222,3 @@ def shared_lock_requests(item, graph):
 		if not (item in graph[transaction]):
 			del copy[transaction]
 	return copy
-
-lock = False
