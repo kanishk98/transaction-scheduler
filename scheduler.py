@@ -22,7 +22,7 @@ def organise_operations(operation, schedule, length):
 	except Exception as e:
 		dependent_on = [] 
 		# item operation uses is not used by anything else
-		dependent_on.append(operation.tid)	
+		dependent_on.append(operation)	
 		# print(dependent_on)
 	finally:
 		locktable[operation.item] = dependent_on
@@ -38,7 +38,7 @@ def create_dependency_graph(item, locktable, length, graph={}):
 		tids = locktable[key]
 		for tid in tids:
 			dset = []
-			t = Transaction(tid, key.kind)
+			t = tid
 			try:
 				dset = graph[t]
 			except KeyError as e:

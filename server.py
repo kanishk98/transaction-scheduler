@@ -12,7 +12,10 @@ app = Flask(__name__)
 @app.route('/add-operation', methods=['POST'])
 def add_operation():
 	arr = json.loads(request.data)
-	schedule = Schedule([], {}, [])
+	operations = []
+	locktable = {}
+	tids = []
+	schedule = Schedule(operations, locktable, tids)
 	print(jsonpickle.encode(schedule))
 	for data in arr:
 		i = data['item']
@@ -22,9 +25,5 @@ def add_operation():
 		operation = Operation(item.kind, item, data['tid'])
 		send_to_scheduler(operation, schedule, len(arr))
 	return str(jsonpickle.encode(arr))
-
-operations = []
-locktable = {}
-tids = []
 
 app.run(debug=True)
