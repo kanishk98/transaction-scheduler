@@ -3,18 +3,22 @@ accepts Operation objects and aggregates them into transactions
 schedules the transactions to maintain consistency
 """
 
-from datamodel import Transaction, Operation, Schedule, Item
+from datamodel import Operation, Schedule, Item
 import jsonpickle
 import math
 import itertools
 from time import sleep
 import json
 
-def organise_operations(operation, schedule, length):
+def organise_operations(operation, length):
 	# operation represents new db operation
 	# needs to be added to schedule
+	global master_schedule
+	while locked:
+		continue
+	schedule = master_schedule
 	schedule.tids.append(operation.tid)
-	locktable = schedule.locktable
+	locktable = clean_locktable(schedule.locktable)
 	dependent_on = None
 	try:
 		dependent_on = locktable[operation.item]
@@ -28,35 +32,52 @@ def organise_operations(operation, schedule, length):
 		locktable[operation.item] = dependent_on
 		schedule.operations.append(operation)
 		schedule.locktable = locktable
+		master_schedule = schedule
 		create_dependency_graph(operation.item, locktable, length)
 		return schedule
 
+def clean_locktable(locktable):
+	copy = dict(locktable)
+	for item in locktable:
+		if len(locktable[item]) == 0:
+			del copy[item]
+	return copy
+
 def create_dependency_graph(item, locktable, length, graph={}):
 	# iterate over locktable to check dependencies
+	print(jsonpickle.encode(locktable))
 	for key in locktable:
 		# key here represents an item used by some operations in schedule
-		tids = locktable[key]
-		for tid in tids:
+		ops = locktable[key]
+		for op in ops:
 			dset = []
-			t = tid
 			try:
-				dset = graph[t]
+				dset = graph[op]
 			except KeyError as e:
-				graph[t] = []
+				graph[op] = []
 			finally:
 				# adds object to dset of every transaction
 				dset.append(key)
-				graph[t] = dset
+				graph[op] = dset
 	# graph between transactions and item sets created
+	copy = dict(graph)
+	for g in graph:
+		try:
+			if executed[g]:
+				del copy[g]
+		except KeyError:
+			continue
 
-	if len(graph) >= length:
+	graph = copy
+	print('Graph: ' + str(jsonpickle.encode(graph)))
+	if len(graph) == length:
 		core_algorithm(graph, locktable, item)
 
 def core_algorithm(graph, locktable, item):
 	dep_dict = find_dep_dict(graph, locktable)
 	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
 	c = 0
-	while len(dep_dict) > 0 and c < 5:
+	while len(dep_dict) > 0:
 		e_dep_dict = refined_deps(dep_dict, True)
 		print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
 
@@ -122,7 +143,31 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph):
 
 def exec_operation(transactions, graph):
 	for transaction in transactions:
-		del graph[transaction]
+		# outer loop iterates over scheduled operations
+		global locked
+		locked = True
+		sleep(1)
+		global master_schedule
+		global executed
+		executed[transaction] = True
+		# print('Master schedule: ' + str(jsonpickle.encode(master_schedule)))
+		schedule = master_schedule
+		new_operations = schedule.operations
+		new_tids = schedule.tids
+		for tid in schedule.tids:
+			new_tids.remove(transaction.tid)
+		for operation in schedule.operations:
+			if operation == transaction:
+				new_operations.remove(operation)
+				# index by item and remove operation from locktable
+				ops_locktable = schedule.locktable[operation.item]
+				try:
+					ops_locktable.remove(operation.tid)
+					schedule.locktable[operation.item] = ops_locktable
+				except ValueError as e:
+					del schedule.locktable[operation.item]
+		master_schedule = Schedule(new_operations, schedule.locktable, new_tids)
+	locked = False
 
 
 def age_transactions(dep_dict):
@@ -222,3 +267,7 @@ def shared_lock_requests(item, graph):
 		if not (item in graph[transaction]):
 			del copy[transaction]
 	return copy
+
+master_schedule = Schedule([], {}, [])
+locked = False
+executed = {}
