@@ -9,25 +9,6 @@ import math
 import itertools
 from time import sleep
 import json
-from flask import Flask, Request
-
-app = Flask(__name__)
-
-@app.route('/add-operation', methods=['POST'])
-def add_operation():
-	arr = json.loads(request.data)
-	print('Request received')
-	for data in arr:
-		i = data['item']
-		var = i['variable']
-		k = i['kind']
-		item = Item(k, var)
-		operation = Operation(item.kind, item, data['tid'])
-		send_to_scheduler(operation, len(arr))
-	return 'OK'
-
-def send_to_scheduler(operation, length):
-	schedule = organise_operations(operation, length)
 
 def organise_operations(operation, length):
 	# operation represents new db operation
@@ -62,7 +43,8 @@ def clean_locktable(locktable):
 
 def create_dependency_graph(item, locktable, length, graph={}):
 	# iterate over locktable to check dependencies
-	print(jsonpickle.encode(locktable))
+	# print(jsonpickle.encode(locktable))
+	print('CREATING DEPENDENCY GRAPH')
 	for key in locktable:
 		# key here represents an item used by some operations in schedule
 		ops = locktable[key]
@@ -92,9 +74,6 @@ def create_dependency_graph(item, locktable, length, graph={}):
 
 def core_algorithm(graph, locktable, item):
 	global master_dep_dict
-	while locked:
-		print('Busy wait')
-		continue
 	dep_dict = find_dep_dict(graph, locktable)
 	diff = dict(set(master_dep_dict) - set(dep_dict))
 	print('Difference: ' + jsonpickle.encode(diff))
@@ -138,6 +117,7 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph):
 		s = 0
 	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
+	sleep(10)
 	if e > s:
 		# exclusive transaction won
 		print('Exclusive transaction ' + str(t.tid) + ' gets scheduled')
@@ -170,7 +150,6 @@ def exec_operation(transactions, graph):
 		# outer loop iterates over scheduled operations
 		global locked
 		locked = True
-		sleep(5)
 		global master_schedule
 		global executed
 		executed[transaction] = True
@@ -300,5 +279,3 @@ master_schedule = Schedule([], {}, [])
 master_dep_dict = {}
 locked = False
 executed = {}
-
-app.run(debug=True, threaded=True)
