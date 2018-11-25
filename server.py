@@ -20,6 +20,6 @@ def add_operation():
 		item = Item(k, var)
 		operation = Operation(item.kind, item, data['tid'])
 		send_to_scheduler(operation, len(arr))
-	return str(jsonpickle.encode(arr))
+	return 'OK'
 
-app.run(debug=True)
+app.run(debug=True, threaded=True)

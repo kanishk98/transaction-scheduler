@@ -4,6 +4,12 @@ class Item:
 		self.variable = variable
 		self.kind = kind
 
+class Request:
+	def __init__(self, operation, length):
+		super(Request, self).__init__()
+		self.operation = operation
+		self.length = length
+
 class Schedule:
 	"""
 	operations represents list of ops to be executed as part of self

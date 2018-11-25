@@ -9,13 +9,30 @@ import math
 import itertools
 from time import sleep
 import json
+from flask import Flask, Request
+
+app = Flask(__name__)
+
+@app.route('/add-operation', methods=['POST'])
+def add_operation():
+	arr = json.loads(request.data)
+	print('Request received')
+	for data in arr:
+		i = data['item']
+		var = i['variable']
+		k = i['kind']
+		item = Item(k, var)
+		operation = Operation(item.kind, item, data['tid'])
+		send_to_scheduler(operation, len(arr))
+	return 'OK'
+
+def send_to_scheduler(operation, length):
+	schedule = organise_operations(operation, length)
 
 def organise_operations(operation, length):
 	# operation represents new db operation
 	# needs to be added to schedule
 	global master_schedule
-	while locked:
-		continue
 	schedule = master_schedule
 	schedule.tids.append(operation.tid)
 	locktable = clean_locktable(schedule.locktable)
@@ -74,9 +91,18 @@ def create_dependency_graph(item, locktable, length, graph={}):
 		core_algorithm(graph, locktable, item)
 
 def core_algorithm(graph, locktable, item):
+	global master_dep_dict
+	while locked:
+		print('Busy wait')
+		continue
 	dep_dict = find_dep_dict(graph, locktable)
-	print('Dependency dictionary: ' + str(jsonpickle.encode(dep_dict)))
-	c = 0
+	diff = dict(set(master_dep_dict) - set(dep_dict))
+	print('Difference: ' + jsonpickle.encode(diff))
+	# adding difference back to dep_dict
+	for key in diff:
+		dep_dict[key] = diff[key]
+	master_dep_dict = dep_dict
+	print('Dependency dictionary: ' + str(jsonpickle.encode(master_dep_dict)))
 	while len(dep_dict) > 0:
 		e_dep_dict = refined_deps(dep_dict, True)
 		print('Exclusive dependency transactions: ' + str(jsonpickle.encode(e_dep_dict)))
@@ -95,8 +121,6 @@ def core_algorithm(graph, locktable, item):
 		s, batch = bldsf(s_dep_dict)
 		# print(s)
 		# print(bldsf)
-
-		c = c + 1
 		dep_dict = schedule_operation(e, t, s, batch, locktable, dep_dict, graph)
 
 
@@ -116,7 +140,7 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph):
 	print('Shared dset size: ' + str(s))
 	if e > s:
 		# exclusive transaction won
-		print(str(t.tid) + ' gets scheduled')
+		print('Exclusive transaction ' + str(t.tid) + ' gets scheduled')
 		# logfile.write(str(t.tid) + '\n')
 		del dep_dict[t]
 		# prevent starvation of transactions with small dsets
@@ -136,7 +160,7 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph):
 				exec_batch.append(transaction)
 				del dep_dict[transaction]
 			dep_dict = age_transactions(dep_dict)		
-		print(str(b) + ' all get scheduled')
+		print('Shared transactions ' + str(b) + ' all get scheduled')
 		exec_operation(exec_batch, graph)
 		# logfile.write(str(b) + '\n')
 	return dep_dict
@@ -146,7 +170,7 @@ def exec_operation(transactions, graph):
 		# outer loop iterates over scheduled operations
 		global locked
 		locked = True
-		sleep(1)
+		sleep(5)
 		global master_schedule
 		global executed
 		executed[transaction] = True
@@ -155,7 +179,10 @@ def exec_operation(transactions, graph):
 		new_operations = schedule.operations
 		new_tids = schedule.tids
 		for tid in schedule.tids:
-			new_tids.remove(transaction.tid)
+			try:
+				new_tids.remove(transaction.tid)
+			except ValueError as e:
+				print('ValueError')
 		for operation in schedule.operations:
 			if operation == transaction:
 				new_operations.remove(operation)
@@ -167,7 +194,8 @@ def exec_operation(transactions, graph):
 				except ValueError as e:
 					del schedule.locktable[operation.item]
 		master_schedule = Schedule(new_operations, schedule.locktable, new_tids)
-	locked = False
+		locked = False
+		sleep(1)
 
 
 def age_transactions(dep_dict):
@@ -269,5 +297,8 @@ def shared_lock_requests(item, graph):
 	return copy
 
 master_schedule = Schedule([], {}, [])
+master_dep_dict = {}
 locked = False
 executed = {}
+
+app.run(debug=True, threaded=True)
