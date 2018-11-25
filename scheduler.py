@@ -42,6 +42,10 @@ def clean_locktable(locktable):
 	return copy
 
 def create_dependency_graph(item, locktable, length, graph={}):
+	old_length = length
+	global master_length
+	master_length = master_length + length
+	length = master_length
 	# iterate over locktable to check dependencies
 	# print(jsonpickle.encode(locktable))
 	print('CREATING DEPENDENCY GRAPH')
@@ -69,8 +73,11 @@ def create_dependency_graph(item, locktable, length, graph={}):
 
 	graph = copy
 	print('Graph: ' + str(jsonpickle.encode(graph)))
+	print('LENGTH: ' + str(length))
 	if len(graph) == length:
 		core_algorithm(graph, locktable, item)
+	else:
+		master_length = master_length - old_length
 
 def core_algorithm(graph, locktable, item):
 	global master_dep_dict
@@ -117,7 +124,7 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph):
 		s = 0
 	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
-	sleep(10)
+	sleep(20)
 	if e > s:
 		# exclusive transaction won
 		print('Exclusive transaction ' + str(t.tid) + ' gets scheduled')
@@ -174,7 +181,6 @@ def exec_operation(transactions, graph):
 					del schedule.locktable[operation.item]
 		master_schedule = Schedule(new_operations, schedule.locktable, new_tids)
 		locked = False
-		sleep(1)
 
 
 def age_transactions(dep_dict):
@@ -275,6 +281,7 @@ def shared_lock_requests(item, graph):
 			del copy[transaction]
 	return copy
 
+master_length = 0
 master_schedule = Schedule([], {}, [])
 master_dep_dict = {}
 locked = False
