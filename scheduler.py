@@ -123,13 +123,15 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 		s = 0
 	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
-	sleep(10)
-	global master_flag
-	if master_flag > flag:
-		# dep_dict was modified, account for this operation with new ones
-		return dep_dict
 	if e > s:
 		# exclusive transaction won
+		print('Exclusive transaction ' + str(t.tid) + ' added to queue, waiting for CPU')
+		sleep(10)
+		global master_flag
+		if master_flag > flag:
+			print('Dependency dictionary modified, withdrawing exclusive transaction ' + str(t.tid))
+			# dep_dict was modified, account for this operation with new ones
+			return dep_dict
 		print('Exclusive transaction ' + str(t.tid) + ' gets scheduled')
 		# logfile.write(str(t.tid) + '\n')
 		del dep_dict[t]

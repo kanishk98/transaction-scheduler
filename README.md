@@ -7,14 +7,15 @@ Demonstration of a scheduling algorithm for a multi-user database system.
 - [x] Server side code to accept operation requests
 - [x] bLDSF algorithm implementation for conflict-aware lock scheduling
 - [x] Operation scheduling output printed appropriately and legibly
-- [ ] ~~Adding delayer to ensure serialisability of operations within transactions~~
-- [ ] Demonstration of consistent results 
-- [ ] Ensuring recoverability
-- [ ] Preventing cascading rollbacks
+- [x] Demonstration of consistent results 
+- [x] Allowing multiple operations within same transaction in the same server request
+- [ ] ~~Ensuring recoverability~~ (out of scope)
+- [ ] ~~Preventing cascading rollbacks~~ (out of scope)
 
 ## Assumptions
 
-1. Operations are executed in between server-side requests.
+1. Transactions are posted to the server with the understanding that an arbitrary order of execution might be followed for multiple operations within the transaction.
+2. 
 
 ## References
 
