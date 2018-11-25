@@ -48,7 +48,6 @@ def create_dependency_graph(item, locktable, length, graph={}):
 	length = master_length
 	# iterate over locktable to check dependencies
 	# print(jsonpickle.encode(locktable))
-	print('CREATING DEPENDENCY GRAPH')
 	for key in locktable:
 		# key here represents an item used by some operations in schedule
 		ops = locktable[key]
@@ -72,8 +71,6 @@ def create_dependency_graph(item, locktable, length, graph={}):
 			continue
 
 	graph = copy
-	print('Graph: ' + str(jsonpickle.encode(graph)))
-	print('LENGTH: ' + str(length))
 	if len(graph) == length:
 		core_algorithm(graph, locktable, item)
 	else:
@@ -83,8 +80,10 @@ def core_algorithm(graph, locktable, item):
 	global master_dep_dict
 	dep_dict = find_dep_dict(graph, locktable)
 	diff = dict(set(master_dep_dict) - set(dep_dict))
-	print('Difference: ' + jsonpickle.encode(diff))
+	global master_flag
 	# adding difference back to dep_dict
+	master_flag = master_flag + 1
+	flag = master_flag
 	for key in diff:
 		dep_dict[key] = diff[key]
 	master_dep_dict = dep_dict
@@ -107,10 +106,10 @@ def core_algorithm(graph, locktable, item):
 		s, batch = bldsf(s_dep_dict)
 		# print(s)
 		# print(bldsf)
-		dep_dict = schedule_operation(e, t, s, batch, locktable, dep_dict, graph)
+		dep_dict = schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag)
 
 
-def schedule_operation(e, t, s, batch, locktable, dep_dict, graph):
+def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 	"""
 	compares e and s and schedules operations accordingly
 	"""
@@ -124,7 +123,11 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph):
 		s = 0
 	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
-	sleep(20)
+	sleep(10)
+	global master_flag
+	if master_flag > flag:
+		# dep_dict was modified, account for this operation with new ones
+		return dep_dict
 	if e > s:
 		# exclusive transaction won
 		print('Exclusive transaction ' + str(t.tid) + ' gets scheduled')
@@ -168,7 +171,7 @@ def exec_operation(transactions, graph):
 			try:
 				new_tids.remove(transaction.tid)
 			except ValueError as e:
-				print('ValueError')
+				continue
 		for operation in schedule.operations:
 			if operation == transaction:
 				new_operations.remove(operation)
@@ -286,3 +289,4 @@ master_schedule = Schedule([], {}, [])
 master_dep_dict = {}
 locked = False
 executed = {}
+master_flag = 0
