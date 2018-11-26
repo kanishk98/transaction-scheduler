@@ -19,5 +19,5 @@ def execute(operation):
 	global executing
 	executing = True
 	global time_taken
-	time_taken = time_taken + 5
+	time_taken = time_taken + 1
 	executing = False

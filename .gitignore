@@ -1,3 +1,5 @@
+node_modules/
+
 # DBMS log file
 logfile.txt
 

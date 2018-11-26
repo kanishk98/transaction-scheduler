@@ -103,13 +103,13 @@ def core_algorithm(graph, locktable, item):
 
 		# creating batch
 		# todo: find more efficient method to maximise function
-		s, batch = bldsf(s_dep_dict)
+		s, batch, highest = bldsf(s_dep_dict)
 		# print(s)
 		# print(bldsf)
-		dep_dict = schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag)
+		dep_dict = schedule_operation(e, t, s, highest, batch, locktable, dep_dict, graph, flag)
 
 
-def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
+def schedule_operation(e, t, s, highest, batch, locktable, dep_dict, graph, flag):
 	"""
 	compares e and s and schedules operations accordingly
 	"""
@@ -123,6 +123,7 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 		s = 0
 	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
+	global time_taken
 	if e > s:
 		# exclusive transaction won
 		print('Exclusive transaction ' + str(t.tid) + ' added to queue, waiting for CPU')
@@ -137,6 +138,9 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 		del dep_dict[t]
 		# prevent starvation of transactions with small dsets
 		dep_dict = age_transactions(dep_dict)
+		time_taken = time_taken + 1
+		with open('./ldsf_time.txt', 'w') as f:
+			f.write(str(time_taken))
 		exec_operation([t], graph)
 	else:
 		b = []
@@ -153,6 +157,9 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 				del dep_dict[transaction]
 			dep_dict = age_transactions(dep_dict)		
 		print('Shared transactions ' + str(b) + ' all get scheduled')
+		time_taken = time_taken + s/highest
+		with open('./ldsf_time.txt', 'w') as f:
+			f.write(str(time_taken))
 		exec_operation(exec_batch, graph)
 		# logfile.write(str(b) + '\n')
 	return dep_dict
@@ -160,10 +167,6 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 def exec_operation(transactions, graph):
 	for transaction in transactions:
 		# outer loop iterates over scheduled operations
-		global time_taken
-		time_taken = time_taken + 5
-		with open('./ldsf_time.txt', 'w') as f:
-			f.write(str(time_taken))
 		global locked
 		locked = True
 		global master_schedule
@@ -240,11 +243,13 @@ def ldsf(dep_dict):
 def bldsf(dep_dict):
 	batch = []
 	m = 0.0
-	
+	highest = 0
 	for transaction in dep_dict:
 		batch.append(transaction)
 		m = m + dep_dict[transaction]
-	return m, batch
+		if dep_dict[transaction] > highest:
+			highest = dep_dict[transaction]
+	return m, batch, highest
 
 
 def refined_deps(dep_dict, kind):

@@ -103,13 +103,13 @@ def core_algorithm(graph, locktable, item):
 
 		# creating batch
 		# todo: find more efficient method to maximise function
-		s, batch = bldsf(s_dep_dict)
+		s, batch, total = bldsf(s_dep_dict)
 		# print(s)
 		# print(bldsf)
-		dep_dict = schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag)
+		dep_dict = schedule_operation(e, t, s, total, batch, locktable, dep_dict, graph, flag)
 
 
-def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
+def schedule_operation(e, t, s, total, batch, locktable, dep_dict, graph, flag):
 	"""
 	compares e and s and schedules operations accordingly
 	"""
@@ -123,6 +123,7 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 		s = 0
 	print('Exclusive dset size: ' + str(e))
 	print('Shared dset size: ' + str(s))
+	global time_taken
 	if e > s:
 		# exclusive transaction won
 		print('Exclusive transaction ' + str(t.tid) + ' added to queue, waiting for CPU')
@@ -137,21 +138,31 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 		del dep_dict[t]
 		# prevent starvation of transactions with small dsets
 		dep_dict = age_transactions(dep_dict)
+		time_taken = time_taken + 1
+		with open('./bldsf_time.txt', 'w') as f:
+			f.write(str(time_taken))
 		exec_operation([t], graph)
 	else:
 		b = []
 		exec_batch = []
-		# batch of transactions won
-		for transaction in batch:
-			if type(transaction) == tuple:
-				b.append(transaction[0].tid)
-				exec_batch.append(transaction[0])
-				del dep_dict[transaction[0]]
-			else:
-				b.append(transaction.tid)
-				exec_batch.append(transaction)
-				del dep_dict[transaction]
-			dep_dict = age_transactions(dep_dict)		
+		try:
+			# batch of transactions won
+			for transaction in batch:
+				if type(transaction) == tuple:
+					b.append(transaction[0].tid)
+					exec_batch.append(transaction[0])
+					del dep_dict[transaction[0]]
+				else:
+					b.append(transaction.tid)
+					exec_batch.append(transaction)
+					del dep_dict[transaction]
+				dep_dict = age_transactions(dep_dict)
+		except Exception as e:
+			a = 5
+		extra = total/s
+		time_taken = time_taken + extra
+		with open('./bldsf_time.txt', 'w') as f:
+			f.write(str(time_taken))
 		print('Shared transactions ' + str(b) + ' all get scheduled')
 		exec_operation(exec_batch, graph)
 		# logfile.write(str(b) + '\n')
@@ -160,10 +171,6 @@ def schedule_operation(e, t, s, batch, locktable, dep_dict, graph, flag):
 def exec_operation(transactions, graph):
 	for transaction in transactions:
 		# outer loop iterates over scheduled operations
-		global time_taken
-		time_taken = time_taken + 5
-		with open('./bldsf_time.txt', 'w') as f:
-			f.write(str(time_taken))
 		global locked
 		locked = True
 		global master_schedule
@@ -245,7 +252,7 @@ def bldsf(dep_dict):
 			# print(jsonpickle.encode(dep_dict))
 			m = dep_dict[transaction]
 			batch.append(transaction)
-		return m, batch
+		return m, batch, m
 	
 	k = len(dep_dict)
 	t_arr = []
@@ -269,7 +276,7 @@ def bldsf(dep_dict):
 			m = total/math.sqrt(k)
 			batch = temp_batch
 		
-	return m, batch
+	return m, batch, total
 
 
 def refined_deps(dep_dict, kind):
