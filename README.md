@@ -15,8 +15,6 @@ Demonstration of a scheduling algorithm for a multi-user database system.
 ## Assumptions
 
 1. Transactions are posted to the server with the understanding that an arbitrary order of execution might be followed for multiple operations within the transaction.
-2. 
-
 ## References
 
 1. [Contention-aware lock scheduling for transactional databases](https://web.eecs.umich.edu/~mozafari/php/data/uploads/pvldb_2018_sched.pdf)

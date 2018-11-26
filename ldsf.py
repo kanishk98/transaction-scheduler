@@ -162,7 +162,7 @@ def exec_operation(transactions, graph):
 		# outer loop iterates over scheduled operations
 		global time_taken
 		time_taken = time_taken + 5
-		with open('./bldsf_time.txt', 'w') as f:
+		with open('./ldsf_time.txt', 'w') as f:
 			f.write(str(time_taken))
 		global locked
 		locked = True
@@ -240,35 +240,10 @@ def ldsf(dep_dict):
 def bldsf(dep_dict):
 	batch = []
 	m = 0.0
-	if len(dep_dict) <= 1:
-		for transaction in dep_dict:
-			# print(jsonpickle.encode(dep_dict))
-			m = dep_dict[transaction]
-			batch.append(transaction)
-		return m, batch
 	
-	k = len(dep_dict)
-	t_arr = []
-	n_arr = []
-	for t in dep_dict:
-		t_arr.append(t)
-	for t in t_arr:
-		n_arr.append(dep_dict[t])
-	# print('K IS HERE: ' + str(k))
-	# todo: check if range(1, k) or (1, k + 1) should be used
-	for i in range(1, k):
-		temp_batch = list(itertools.combinations(t_arr, i))
-		print(jsonpickle.encode(temp_batch))
-		total = 0
-		for transaction in temp_batch:
-			# print('TRANSACTION: ' + str(jsonpickle.encode(transaction)))
-			# print(dep_dict[transaction[0]])
-			# print('TRANSACTION[0]: ' + str(jsonpickle.encode(transaction[0])))
-			total = total + dep_dict[transaction[0]]
-		if total/math.sqrt(k) > m:
-			m = total/math.sqrt(k)
-			batch = temp_batch
-		
+	for transaction in dep_dict:
+		batch.append(transaction)
+		m = m + dep_dict[transaction]
 	return m, batch
 
 
